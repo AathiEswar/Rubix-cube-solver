@@ -333,97 +333,104 @@ export default function CameraScanner({
         </div>
       )}
 
-      {/* Top-right floating controls: mode toggle + reset */}
-      <div className="absolute right-4 top-4 z-20 flex flex-col items-end gap-2">
-        <div className="flex overflow-hidden rounded-full border border-white/20 bg-black/60 text-xs font-semibold backdrop-blur">
+      {/* Right panel: top-right controls + progress + instruction */}
+      <div className="absolute right-4 top-4 z-20 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-3">
+        {/* Header row: mode toggle + start over */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex overflow-hidden rounded-full border border-white/20 bg-black/70 text-xs font-semibold backdrop-blur-md">
+            <button
+              onClick={() => setMode('manual')}
+              className={`px-3.5 py-1.5 transition ${
+                mode === 'manual'
+                  ? 'bg-white text-black'
+                  : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Manual
+            </button>
+            <button
+              onClick={() => setMode('auto')}
+              className={`px-3.5 py-1.5 transition ${
+                mode === 'auto'
+                  ? 'bg-emerald-500 text-black'
+                  : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Auto
+            </button>
+          </div>
           <button
-            onClick={() => setMode('manual')}
-            className={`px-4 py-1.5 transition ${
-              mode === 'manual'
-                ? 'bg-white text-black'
-                : 'text-white/70 hover:bg-white/10'
-            }`}
+            onClick={onReset}
+            className="rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md hover:bg-white/10"
           >
-            Manual
-          </button>
-          <button
-            onClick={() => setMode('auto')}
-            className={`px-4 py-1.5 transition ${
-              mode === 'auto'
-                ? 'bg-emerald-500 text-black'
-                : 'text-white/70 hover:bg-white/10'
-            }`}
-          >
-            Auto
+            Start over
           </button>
         </div>
-        <button
-          onClick={onReset}
-          className="rounded-lg border border-white/20 bg-black/50 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur hover:bg-white/10"
-        >
-          Start over
-        </button>
-      </div>
 
-      {/* Top banner: progress + instruction */}
-      <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent p-4 pb-10">
-        <div className="mx-auto mt-20 max-w-xl rounded-2xl border border-white/10 bg-black/60 px-5 py-4 backdrop-blur md:mt-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs uppercase tracking-widest text-white/60">
-              {scannedCount} of 6 scanned
-            </p>
-            <div className="flex items-center gap-1.5">
-              {SCAN_STEPS.map((s, i) => {
-                const done = Boolean(faces[s.face]);
-                const current = i === stepIndex;
-                const canRetake = done && !current;
-                return (
-                  <button
-                    key={s.face}
-                    type="button"
-                    disabled={!canRetake}
-                    title={
-                      canRetake
-                        ? `Retake ${s.title}`
-                        : current
-                          ? `Scanning ${s.title}`
-                          : s.title
-                    }
-                    onClick={() => onRetakeFace(i)}
-                    className={`h-6 w-6 rounded-full border transition ${
-                      current
-                        ? 'border-cyan-300 ring-2 ring-cyan-300/40'
-                        : canRetake
-                          ? 'border-white/50 hover:scale-110 hover:ring-2 hover:ring-white/30'
-                          : 'border-white/30'
-                    } ${canRetake ? 'cursor-pointer' : 'cursor-default'}`}
-                    style={{
-                      backgroundColor: done
-                        ? STICKER_HEX[s.expectedCenter]
-                        : current
-                          ? `${STICKER_HEX[s.expectedCenter]}88`
-                          : 'transparent',
-                    }}
-                  />
-                );
-              })}
+        {/* Instruction Card */}
+        <div className="rounded-2xl border border-white/15 bg-black/70 p-4 shadow-2xl backdrop-blur-md">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">
+                {scannedCount} of 6 scanned
+              </p>
+              <div className="flex items-center gap-1.5">
+                {SCAN_STEPS.map((s, i) => {
+                  const done = Boolean(faces[s.face]);
+                  const current = i === stepIndex;
+                  const canRetake = done && !current;
+                  return (
+                    <button
+                      key={s.face}
+                      type="button"
+                      disabled={!canRetake}
+                      title={
+                        canRetake
+                          ? `Retake ${s.title}`
+                          : current
+                            ? `Scanning ${s.title}`
+                            : s.title
+                      }
+                      onClick={() => onRetakeFace(i)}
+                      className={`h-5 w-5 rounded-full border transition ${
+                        current
+                          ? 'border-cyan-300 ring-2 ring-cyan-300/40 scale-110'
+                          : canRetake
+                            ? 'border-white/50 hover:scale-110 hover:ring-2 hover:ring-white/30'
+                            : 'border-white/30'
+                      } ${canRetake ? 'cursor-pointer' : 'cursor-default'}`}
+                      style={{
+                        backgroundColor: done
+                          ? STICKER_HEX[s.expectedCenter]
+                          : current
+                            ? `${STICKER_HEX[s.expectedCenter]}88`
+                            : 'transparent',
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
+
+            <h2 className="mt-1 text-base font-bold text-white">{step.title}</h2>
+            
+            <div className="flex items-start gap-3 rounded-xl bg-white/5 p-2.5 text-xs text-white/90 border border-white/10">
+              <RotationHint rotation={step.rotation} />
+              <p className="leading-snug">{step.instruction}</p>
+            </div>
+
+            {scannedCount > 0 && (
+              <p className="text-[10px] text-white/40">
+                Tap a filled dot to retake that face.
+              </p>
+            )}
+
+            {mode === 'auto' && (
+              <p className="text-[10px] text-white/50">
+                Auto mode: hold face steady for 2s to scan.
+              </p>
+            )}
           </div>
-          {scannedCount > 0 && (
-            <p className="mt-1.5 text-[11px] text-white/45">
-              Tap a filled colour to retake that face
-            </p>
-          )}
-          <h2 className="mt-2 text-lg font-semibold">{step.title}</h2>
-          <div className="mt-1 flex items-start gap-3 text-sm text-white/85">
-            <RotationHint rotation={step.rotation} />
-            <p>{step.instruction}</p>
-          </div>
-          {mode === 'auto' && (
-            <p className="mt-2 text-[11px] text-white/50">
-              Auto capture on — hold each face steady for 2s and it scans itself.
-            </p>
-          )}
         </div>
       </div>
 
