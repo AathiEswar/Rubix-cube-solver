@@ -5,17 +5,22 @@ import { ensureSolverReady, isSolverReady } from '../server/src/solver';
  * Vercel serverless handler for GET /api/health.
  */
 
-type Res = ServerResponse & {
-  status: (code: number) => Res;
-  json: (body: unknown) => void;
-};
-
-export default function handler(_req: IncomingMessage, res: Res) {
-  try {
-    ensureSolverReady();
-  } catch {
-    res.status(503).json({ ok: false, solverReady: false });
+function sendJson(res: ServerResponse, status: number, data: unknown) {
+  if (typeof (res as any).status === 'function' && typeof (res as any).json === 'function') {
+    (res as any).status(status).json(data);
     return;
   }
-  res.status(200).json({ ok: true, solverReady: isSolverReady() });
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
 }
+
+export default function handler(_req: IncomingMessage, res: ServerResponse) {
+  try {
+    ensureSolverReady();
+    sendJson(res, 200, { ok: true, solverReady: isSolverReady() });
+  } catch (err: any) {
+    sendJson(res, 503, { ok: false, solverReady: false, error: err?.message });
+  }
+}
+

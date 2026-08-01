@@ -45,7 +45,17 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ facelets: result.facelets }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          res.ok
+            ? 'Solver returned an invalid response.'
+            : `Server error (${res.status}): ${text.slice(0, 120)}`
+        );
+      }
       if (!res.ok) throw new Error(data.error ?? 'The solver failed.');
       setMoves(data.moves as string[]);
       setPhase('solution');

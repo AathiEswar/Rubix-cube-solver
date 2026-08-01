@@ -1,26 +1,39 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { solveFacelets } from '../server/src/solver';
 
-/**
- * Vercel serverless handler for POST /api/solve.
- * Initialises the Kociemba tables once per warm instance (via solveFacelets).
- */
-
 type VercelReq = IncomingMessage & {
   method?: string;
-  body?: { facelets?: unknown };
+  body?: any;
 };
 
-type VercelRes = ServerResponse & {
-  status: (code: number) => VercelRes;
-  json: (body: unknown) => void;
-};
+function sendJson(res: ServerResponse, status: number, data: unknown) {
+  if (typeof (res as any).status === 'function' && typeof (res as any).json === 'function') {
+    (res as any).status(status).json(data);
+    return;
+  }
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
+}
 
 async function readBody(req: VercelReq): Promise<{ facelets?: unknown }> {
-  if (req.body && typeof req.body === 'object') return req.body;
+  if (req.body) {
+    if (typeof req.body === 'object') return req.body;
+    if (typeof req.body === 'string') {
+      try {
+        return JSON.parse(req.body);
+      } catch {
+        return {};
+      }
+    }
+  }
   const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  try {
+    for await (const chunk of req) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+  } catch {
+    return {};
   }
   if (chunks.length === 0) return {};
   try {
@@ -32,21 +45,28 @@ async function readBody(req: VercelReq): Promise<{ facelets?: unknown }> {
   }
 }
 
-export default async function handler(req: VercelReq, res: VercelRes) {
-  if (req.method === 'OPTIONS') {
-    res.status(204).end();
-    return;
-  }
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+export default async function handler(req: VercelReq, res: ServerResponse) {
+  try {
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { error: 'Method not allowed' });
+      return;
+    }
 
-  const body = await readBody(req);
-  const result = solveFacelets(body.facelets);
-  if ('error' in result) {
-    res.status(result.status).json({ error: result.error });
-    return;
+    const body = await readBody(req);
+    const result = solveFacelets(body.facelets);
+    if ('error' in result) {
+      sendJson(res, result.status, { error: result.error });
+      return;
+    }
+    sendJson(res, 200, result);
+  } catch (err: any) {
+    console.error('API /api/solve error:', err);
+    sendJson(res, 500, { error: err?.message || 'Internal Server Error' });
   }
-  res.status(200).json(result);
 }
+
