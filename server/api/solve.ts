@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { solveFacelets } from '../server/src/solver';
+import { solveFacelets } from '../src/solver.js';
 
 type VercelReq = IncomingMessage & {
   method?: string;
@@ -69,4 +69,3 @@ export default async function handler(req: VercelReq, res: ServerResponse) {
     sendJson(res, 500, { error: err?.message || 'Internal Server Error' });
   }
 }
-

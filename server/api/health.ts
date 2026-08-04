@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { ensureSolverReady, isSolverReady } from '../server/src/solver';
+import { ensureSolverReady, isSolverReady } from '../src/solver.js';
 
 /**
  * Vercel serverless handler for GET /api/health.
@@ -23,4 +23,3 @@ export default function handler(_req: IncomingMessage, res: ServerResponse) {
     sendJson(res, 503, { ok: false, solverReady: false, error: err?.message });
   }
 }
-

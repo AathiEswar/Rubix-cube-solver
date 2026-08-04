@@ -40,7 +40,8 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch('/api/solve', {
+      const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+      const res = await fetch(`${baseUrl}/api/solve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ facelets: result.facelets }),
